@@ -218,8 +218,8 @@ class GaussianDiffusion(nn.Module):
             (1 - continuous_sqrt_alpha_cumprod**2).sqrt() * noise
         )
 
-    def p_losses(self, x_in, noise=None):
-        x_start = x_in['HR']
+    def p_losses(self, residual, blur, noise=None):
+        x_start = residual
         [b, c, h, w] = x_start.shape
         t = np.random.randint(1, self.num_timesteps + 1)
         continuous_sqrt_alpha_cumprod = torch.FloatTensor(
@@ -240,7 +240,8 @@ class GaussianDiffusion(nn.Module):
             x_recon = self.denoise_fn(x_noisy, continuous_sqrt_alpha_cumprod)
         else:
             x_recon = self.denoise_fn(
-                torch.cat([x_in['SR'], x_noisy], dim=1), continuous_sqrt_alpha_cumprod)
+                torch.cat([blur, x_noisy], dim=1), continuous_sqrt_alpha_cumprod)
+            # blur和加噪的残差在通道上cat在一起
 
         loss = self.loss_func(noise, x_recon)
         return loss
